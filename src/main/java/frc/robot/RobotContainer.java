@@ -7,7 +7,12 @@ package frc.robot;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.Autos;
 import frc.robot.commands.ExampleCommand;
-import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.subsystems.*;
+import frc.robot.subsystems.Drive.TunerConstants;
+import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import java.util.function.Supplier;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -19,8 +24,12 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-  // The robot's subsystems and commands are defined here...
-  private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
+  // The robot's subsystems and commands are defined here..
+  // The example subsystem used by the template code. Restored so Robot.getAutonomousCommand() works.
+  private final frc.robot.subsystems.ExampleSubsystem m_exampleSubsystem = new frc.robot.subsystems.ExampleSubsystem();
+
+  // The swerve drivetrain instance (constructed via TunerConstants)
+  private final CommandSwerveDrivetrain m_drive = TunerConstants.createDrivetrain();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_driverController =
@@ -30,6 +39,13 @@ public class RobotContainer {
   public RobotContainer() {
     // Configure the trigger bindings
     configureBindings();
+    // Set default teleop drive behavior: use left stick for translation, right X for rotation
+    m_drive.setDefaultCommand(m_drive.run(() -> {
+      double vx = -m_driverController.getLeftY(); // forward
+      double vy = -m_driverController.getLeftX(); // strafe
+      double rot = -m_driverController.getRightX(); // rotation
+      m_drive.drive(new Translation2d(vx, vy), rot, true);
+    }));
   }
 
   /**
@@ -49,6 +65,9 @@ public class RobotContainer {
     // Schedule `exampleMethodCommand` when the Xbox controller's B button is pressed,
     // cancelling on release.
     m_driverController.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
+  // Press X to run the AutoAlign routine (front-center of AprilTag)
+  m_driverController.x().onTrue(new frc.robot.subsystems.Drive.AutoAlign(m_drive));
+    
   }
 
   /**
